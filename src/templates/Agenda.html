@@ -1,0 +1,434 @@
+{% extends 'Vertical-navbar.html' %}
+
+
+
+{% block title %}
+MediLink - Agenda
+{% endblock %}
+
+{% block head %}
+<!--JQuery-->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
+<!-- Scripts de Bootstrap y jQuery -->
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
+<!-- OTRAS LIBRERIAS QUE NECESITES IMPORTAR -->
+<!-- Bootstrap datepicker CSS -->
+<link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" />
+<!-- Bootstrap datepicker JS-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+<!-- CSS -->
+<link rel="stylesheet" type="text/css" href="../static/css/agenda.css"> 
+
+{% endblock %}
+
+{% block body %}
+
+<div class="container-fluid">
+    <!-- Titulo -->
+    <div class="d-flex justify-content-center flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Agenda</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+        </div>
+    </div>
+    <!-- Contenedor -->
+    <div class="container-fluid">
+        <!-- Calendario -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div id="calendar"></div>
+            </div>
+            <!-- Carta -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title text-center text-white ">Acciones</h5>
+                        <div class="table-responsive">
+                            <table id="appointmentDetails" class="table table-sm">
+                                <thead>
+                                    <th>Nombre</th>
+                                    <th>Apellidos</th>
+                                    <th>Fecha</th>
+                                    <th>Doctor</th>
+                                    <th>Motivo</th>
+                                </thead>
+                                <tbody id="id_cita_fila" data-id="id_cita">
+                                <!-- Aquí se agregarán las filas dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Apartado de botones -->
+                        <div class="d-grid gap-2 mt-3">
+                            <button id="agregarCitasBoton" class="btn btn-primary">Agregar</button>
+                            <button id="modificarCitasBoton" class="btn btn-secondary">Modificar</button>
+                            <button id="eliminarCitasBoton" class="btn btn-danger">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal para agregar citas -->
+    <div class="modal fade" id="modalAgregarCitas" tabindex="-1" aria-labelledby="modalAgregarCitasLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title h5" id="modalAgregarCitasLabel">Agregar Cita</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Agregar cita -->
+                    <form id="form_agregar_cigar" action="/agregar_cita" method="post">
+                        <input type="hidden" name="token_agregar" value="{{ session.token }}">
+                        <input type="hidden" name="redirect" value="{{ request.path }}">
+                        <!-- ID -->
+                        <input type="hidden" name="redirect" value="{{ request.path }}">
+                        <input type="hidden" name="redirect" value="{{ request.path }}">
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="paciente" class="input-group-text">Nombre</label>
+                            <select class="form-select" name="paciente" id="paciente">
+                                <option value="-1" selected>----- Elige una opción -----</option>
+                                {% if lista_pacientes %}
+                                {% for paciente in lista_pacientes %}
+                                <option value="{{paciente['ID_paciente']}}">{{paciente['Nombres']}}
+                                    {{paciente['Apellido_paterno']}}
+                                    {{paciente['Apellido_materno']}}</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="motivo" class="input-group-text">Motivo</label>
+                            <textarea class="form-control" id="motivo" rows="3" name="motivo"></textarea>
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="fecha" class="input-group-text">Fecha</label>
+                            <input type="date" name="fecha" id="fecha" class="form-control">
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="hora" class="input-group-text">Hora</label>
+                            <input type="time" name="hora" id="hora" class="form-control" min="07:00" max="24:00"
+                                step="1800" value="12:00">
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="doctor" class="input-group-text">Doctor asignado</label>
+                            <select class="form-select" name="doctor" id="doctor">
+                                <option value="-1" selected>----- Elige una opción -----</option>
+                                {% if lista_doctores %}
+                                {% for doctor in lista_doctores %}
+                                <option value="{{doctor['ID_doctor']}}">Dr. {{doctor['Nombres']}}
+                                    {{doctor['Apellido_paterno']}}
+                                    {{doctor['Apellido_materno']}}</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <input type="submit" name="submit" id="submit" class="form-control">
+                        </div>
+                        <div class="center"><span id="segundosModalagregar"></span></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal para modificar citas -->
+    <div class="modal fade" id="modalModificarCitas" tabindex="-1" aria-labelledby="modalModificarCitasLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title h5" id="modalModificarCitasLabel">Modificar Cita</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Modificar cita -->
+                    <form id="form_Modificar_cita" action="/modificar_cita" method="post">
+                        <input type="hidden" name="token_modificar" value="{{ session.token }}">
+                        <input type="hidden" name="redirect" value="{{ request.path }}">
+                        <!-- ID -->
+                        <input type="hidden" name="cita_mod" id="cita_mod" value="">
+                        <input type="hidden" name="recepcionista_mod" value="1"> <!-- ID Recepcionista_mod CAMBIAR-->
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="paciente" class="input-group-text">Nombre</label>
+                            <select class="form-select" name="paciente_mod" id="paciente_mod">
+                                <option value="-1" selected>----- Elige una opción -----</option>
+                                {% if lista_pacientes %}
+                                {% for paciente in lista_pacientes %}
+                                <option value="{{paciente['ID_paciente']}}">{{paciente['Nombres']}}
+                                    {{paciente['Apellido_paterno']}}
+                                    {{paciente['Apellido_materno']}}</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="motivo" class="input-group-text">Motivo</label>
+                            <textarea class="form-control" id="motivo_mod" rows="3" name="motivo_mod"></textarea>
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="fecha" class="input-group-text">Fecha</label>
+                            <input type="date" name="fecha_mod" id="fecha_mod" class="form-control">
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="hora" class="input-group-text">Hora</label>
+                            <input type="time" name="hora_mod" id="hora_mod" class="form-control" min="07:00" max="24:00"
+                                step="1800" value="12:00">
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <label for="doctor" class="input-group-text">Doctor asignado</label>
+                            <select class="form-select" name="doctor_mod" id="doctor_mod">
+                                <option value="-1" selected>----- Elige una opción -----</option>
+                                {% if lista_doctores %}
+                                {% for doctor in lista_doctores %}
+                                <option value="{{doctor['ID_doctor']}}">Dr. {{doctor['Nombres']}}
+                                    {{doctor['Apellido_paterno']}}
+                                    {{doctor['Apellido_materno']}}</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="input-group flex-nowrap mb-2">
+                            <input type="submit" name="submit" id="change" class="form-control">
+                        </div>
+                        <div class="center"><span id="segundosModalmodificar"></span></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="data" data-citas="{{ citas }}" data-pacientes="{{ lista_pacientes }}" data-doctores="{{ lista_doctores }}">
+    </div>
+    <!-- Eliminar cita -->
+    <div class="modal fade" id="modalEliminarCitas" tabindex="-1" aria-labelledby="modalEliminarCitasLabel"
+        aria-hidden="true">
+        <!-- Modal -->
+        <div class="modal-dialog">
+            <!-- Contenido -->
+            <div class="modal-content">
+                <!-- Titulos -->
+                <div class="modal-header">
+                    <h1 class="modal-title h5" id="modalEliminarCitasLabel">Eliminar paciente</h1>
+                </div>
+                <!-- Cuerpo -->
+                <div class="modal-body">
+                    <!-- Formulario dentro -->
+                    <form id="form_pacientes_elim" action="/Eliminar_Cita" method="post">
+                        <input type="hidden" name="token_eliminar" value="{{ session.token }}">
+                        <!--ID-->
+                        <input type="input-group" name="cita_id_eli" id="cita_id_eli" class="form-control"
+                            style="display: none;" value="">
+                        <div class="modal-footer d-flex flex-column align-items-center">
+                            <p class="mb-4">¿Estás seguro de que quieres continuar?</p>
+                            <div class="text-end">
+                                <button type="submit" name="eliminate" id="eliminate" class="btn btn-danger me-2">
+                                    Eliminar
+                                </button>
+                                <button type="button" name="cancel" id="cancel" class="btn btn-primary me-2" data-bs-dismiss="modal"aria-label="Close">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="center"><span id="segundosModaleliminar"></span></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<!-- Scripts de bootstrap -->
+<script src=" https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous">
+    </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+<script defer src="{{url_for('static', filename='js/validaciones.js')}}"></script>
+<script>
+    const view = 'Citas';
+</script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script src="../static/js/websockets.js"></script>
+<script>
+    // esto es para configurar la tabla en español
+    $.fn.datepicker.dates['es'] = {
+        days: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+        daysShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+        daysMin: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+        months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+        monthsShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+        today: 'Ir al día de hoy',
+        clear: 'Limpiar',
+        format: 'dd/mm/yy',
+        titleFormat: "MM yyyy",
+        weekStart: 1
+    };
+    // datepicker 
+    $('#calendar').datepicker({
+        language: "es",
+        //calendarWeeks: true,
+        todayHighlight: true,
+        keepEmptyValues: true,
+        todayBtn: true,
+        changeMonth: true,
+        changeYear: true,
+        keyboardNavigation: false,
+        maxViewMode: 'months',
+    })
+    // Evento changeDate del componente datepicker
+    $('#calendar').datepicker().on('changeDate', function (e) {
+        console.log(e.date) //Mostrar el objeto date
+        console.log(e.date.getFullYear()) //Obtiene el año de la fecha seleccionada 
+        console.log(e.date.getMonth() + 1) //Obtiene el mes, se pone +1 por que getMonth() devuelve los meses indexados
+        console.log(e.date.getDate()) //Obtiene el día del mes seleccionado
+        //CREAR OTRO REQUEST PERO QUE MUESTRE EN LA OTRA TABLA
+        //Llama a la funcion request_citas_tabla con los valores año/mes/dia
+        request_citas_tabla(e.date.getFullYear(), e.date.getMonth() + 1, e.date.getDate())
+    });
+    //Diseño
+    $(document.querySelectorAll('.datepicker-inline')).addClass('w-100 rounded-5 p-3 shadow-lg overflow-auto overflow-hide-scroll')
+    //Diseño
+    $(document.querySelectorAll('.table-condensed')).addClass('table table-sm w-100 custom-table').removeClass('table-condensed')
+    //
+    function formatDate(date) {
+        let adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000)); //Ajustar el horario
+        //  
+        //Crea una representación de la fecha en formato "MM/DD/YYYY"
+        let datePart = [
+            adjustedDate.getMonth() + 1,    //Mes (0-11)
+            adjustedDate.getDate(),         //Día del mes
+            adjustedDate.getFullYear()      //Año
+        ].map((n, i) => n.toString().padStart(i === 2 ? 4 : 2, "0"))    //Rellenar los ceros
+            .join("/");     //Une los elementos con "/"
+        // Crea una representación de la hora en formato "HH:MM:SS"
+        console.log(adjustedDate.getHours(), adjustedDate.getMinutes(), adjustedDate.getSeconds())
+        let timePart = [
+            adjustedDate.getHours(),        //Hora
+            adjustedDate.getMinutes(),      //Minutos
+            adjustedDate.getSeconds()       //Segundos
+        ].map((n, i) => n.toString().padStart(2, "0"))
+            .join(":");     // Une los elementos con ":"
+        //Devuelve la cadena completa en formato "MM/DD/YYYY HH:MM:SS"
+        return datePart + " " + timePart;
+    }
+    //
+    function request_citas_tabla(year, month, day) {
+        //Definir la ruta
+        const route = `/api/citas/${year}/${month}/${day}`;
+        //Utiliza JQuery para solicitar ajax
+        $.ajax({
+            url: route,
+            async: false,
+            //Si la solicitud es exitosa
+            success: function (resultado) {
+                console.log("Resultado request_citas_tabla")
+                $('#appointmentDetails tbody').empty(); // Limpiar el cuerpo de la tabla
+                if (resultado.length == 0) {
+                    selectedRow = null
+                    console.log('No hay citas para esta fecha');
+                    return;
+                }
+                //Imprimir el resultado
+                console.log(resultado)
+                //Iterar sobre el resultado
+                for (let i = 0; i < resultado.length; i++) {
+                    let date = new Date(resultado[i]['Fecha']);
+                    document.getElementById('id_cita_fila').dataset.id = resultado[i]['ID_cita']
+                    // Agregar una nueva fila a la tabla
+                    $('#appointmentDetails tbody').append(`
+                                    <tr class="clickable-row" id_cita_1="${resultado[i]['ID_cita']}" id_doctor="${resultado[i]['ID_Doctor']}" id_paciente="${resultado[i]['ID_Paciente']}" >
+                                        <td>${resultado[i]['Nombres']}</td>
+                                        <td>${resultado[i]['Apellido_Paterno']} ${resultado[i]['Apellido_Materno']}</td>
+                                        <td>${formatDate(date)}</td>
+                                        <td>Dr. ${resultado[i]['Doctor_Nombres']} ${resultado[i]['Doctor_Apellido_Paterno']} ${resultado[i]['Doctor_Apellido_Materno']}</td>
+                                        <td>${resultado[i]['Motivo']}</td>
+                                    </tr>
+                                `);
+                }
+                // Reasignar el evento a las filas recién agregadas
+                bindRowEvents();
+            },
+            //Manejo de errores
+            error: function (jqXHR, exception) {
+                if (jqXHR.status === 0) {
+                    alert('Not connect.\n Verify Network.');
+                } else if (jqXHR.status == 404) {
+                    alert('Requested page not found. [404]');
+                } else if (jqXHR.status == 500) {
+                    alert('Internal Server Error [500].');
+                } else if (exception === 'parsererror') {
+                    alert('Requested JSON parse failed.');
+                } else if (exception === 'timeout') {
+                    alert('Time out error.');
+                } else if (exception === 'abort') {
+                    alert('Ajax request aborted.');
+                } else {
+                    alert('Uncaught Error.\n' + jqXHR.responseText);
+                }
+            }
+        });
+    }
+    //R
+    function bindRowEvents() {
+        document.querySelectorAll('.clickable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                // Deseleccionar la fila anterior
+                if (selectedRow) {
+                    selectedRow.classList.remove('table-primary');
+                }
+                // Seleccionar la nueva fila
+                selectedRow = this;
+                selectedRow.classList.add('table-primary');
+                // Guardar los datos de la fila seleccionada
+                const id_cita = row.getAttribute('id_cita_1');
+                const id_paciente = row.getAttribute('id_paciente');
+                const id_doctor = row.getAttribute('id_doctor');
+                const fechaCompleta = row.children[2].textContent; // '10/15/2024 06:00:00' 
+                const [fecha, hora] = fechaCompleta.split(' ');
+                const motivo = row.children[4].textContent;
+                // Verificar los datos en la consola
+                console.log(id_cita)
+                console.log(id_paciente)
+                console.log(id_doctor)
+                console.log(motivo)
+                console.log(fecha)
+                console.log(hora)
+                //
+                const partes = fecha.split('/'); // ['10', '15', '2024']
+                const fechaFormateada = `${partes[2]}-${partes[0].padStart(2, '0')}-${partes[1].padStart(2, '0')}`;
+                // Aquí puedes asignar los datos al modal si lo necesitas
+                document.getElementById('cita_mod').value = id_cita;
+                document.getElementById('paciente_mod').value = id_paciente;
+                document.getElementById('doctor_mod').value = id_doctor;
+                document.getElementById('motivo_mod').value = motivo;
+                document.getElementById('fecha_mod').value = fechaFormateada;
+                document.getElementById('hora_mod').value = hora;
+            });
+        });
+    }
+</script>
+
+{% if session['Tipo_usuario'] is defined %}
+{% if session['Tipo_usuario'] == 'doctor' %}
+
+<script>
+</script>
+
+{% elif session['Tipo_usuario'] == 'recepcionista' %}
+
+<script>
+</script>
+
+{% endif %}
+{% endif %}
+
+{% endblock %}
